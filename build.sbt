@@ -1,5 +1,5 @@
 organization := "me.lessis"
 
-name := "danboto"
+name := "danbot"
 
 version := "0.1.0-SNAPSHOT"
