@@ -74,7 +74,7 @@ case class Server(
                            Left((n, cmd))
                        }
                      }
-                  } else sys.error("%s Does not compute.")).fold({ svr =>
+                  } else sys.error("%s Does not compute." format line)).fold({ svr =>
                     ()
                   }, { _ match {
                     case (fromNick, fromLogin, fromHost) =>
@@ -82,25 +82,35 @@ case class Server(
                      println("fromNick '%s' fromLogin '%s' fromHost '%s' cmd %s rest %s" format(
                        fromNick, fromLogin, fromHost, cmd, rest
                      ))
-                     //println("from nick %s from login %s from host %s" format(fromNick, fromLogin,fromHost))
                      cmd.toUpperCase match {
                        case "TOPIC" =>
-                       // topic :dougtangren!~dougtangr@cpe-74-73-169-51.nyc.res.rr.com TOPIC #danboto :danbot!
+                         println("topic %s" format rest)
                        case "PRIVMSG" =>
-                       // chan msg :dougtangren!~dougtangr@cpe-74-73-169-51.nyc.res.rr.com PRIVMSG #danboto :hi danbot
-                       // priv msg :dougtangren!~dougtangr@cpe-74-73-169-51.nyc.res.rr.com PRIVMSG danbot :hi dan
+                         val Room = """(#\w+) :(.*)""".r
+                         val Msg = """(\w+) :(.*)""".r
+                         rest match {
+                           case Room(ch, msg) =>
+                             println("%s said %s in %s" format(fromNick, msg, ch))
+                           case Msg(who, msg) =>
+                             println("%s sent you a private msg, %s" format(fromNick, msg))
+                         }
                        case "INVITE" =>
+                         println("invite %s" format rest)
                        // invite dougtangren!~dougtangr@cpe-74-73-169-51.nyc.res.rr.com cmd INVITE DANBOT :#DANBOTO line :dougtangren!~dougtangr@cpe-74-73-169-51.nyc.res.rr.com INVITE danbot :#danboto
                        case "KICK" =>
+                         println("kick %s" format rest)
                        // kick :dougtangren!~dougtangr@cpe-74-73-169-51.nyc.res.rr.com KICK #danboto danbot :danbot
                        case "PART" =>
+                         println("%s parted from %s" format(fromNick,rest))
                        // part :dougtangren!~dougtangr@cpe-74-73-169-51.nyc.res.rr.com PART #danboto :"l8r"
                        case "JOIN" =>
+                         if(fromNick.equals(name)) println("you joined %s" format rest)
+                         else println("%s joined %s" format(fromNick, rest))
                        // join :dougtangren!~dougtangr@cpe-74-73-169-51.nyc.res.rr.com JOIN #danboto
-                       case "QUITE" =>
+                       case "QUIT" =>
+                         println("quit %s" format rest)
                        // quit :dougtangren!~dougtangr@cpe-74-73-169-51.nyc.res.rr.com QUIT :
-
-                       case command => println("sender %s cmd %s" format(sender, command))
+                       case command => println("cmd %s, rest %s" format(command, rest))
                      }
                  }
                })

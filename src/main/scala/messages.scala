@@ -1,11 +1,10 @@
 package dan
 
 object Messages {
-  def apply(protocol: String): Message = Raw(protocol)
+
 }
 
 trait Message {
   def text: String
+  def sender: Sender
 }
-
-case class Raw(text: String) extends Message
