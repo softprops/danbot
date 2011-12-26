@@ -2,29 +2,45 @@ package dan
 
 object Bot {
 
-  type Responder = PartialFunction[Message, Unit]
+  // todo: make this chainable
+  type Responder = PartialFunction[SentMessage, Unit]
 
-  case class Context(chans: Seq[String], bot: DanBot) {
-    def listen(f: Responder) =
-      bot.copy(channels = bot.channels ++ chans.map(_ -> f))
+  case class FilteredResponder(name: String, ifmentioned: Responder) {
+    def apply: Responder = {
+      case m@(_:SentMessage) if(m.text.contains(name) && ifmentioned.isDefinedAt(m)) =>
+        ifmentioned(m)
+      case _ => () 
+    }
   }
 
+  /** Provides some context for listening and responding to messages */
+  case class Context(chans: Seq[String], bot: DanBot) {
+    /** respond when any message is received */
+    def listen(f: Responder) =
+       bot.copy(channels = bot.channels ++ chans.map(_ -> f))
+    /** respond only when this bot's name is mentioned */
+    def mentions(f: Responder) =
+      bot.copy(channels = bot.channels ++ chans.map(_ -> FilteredResponder(bot.name, f).apply))
+  }
+
+  /** A soft-spoken but well-intentioned robot just looking for a friend */
   case class DanBot(
-    name: String, server: Server = Server.default,
+    name: String,
+    server: Server = Server.default,
     channels: Map[String, Responder] = Map.empty[String, Responder]) {
 
+    /** Specifies which context to listen for messages */
     def in(chans: String*) = Context(chans, this)
 
-    def server(name: String, port: Int = 6667) =
+    /** Specificies which server to connect to. Defaults to `freenode` */
+    def server(name: String, port: Int = 6667, log: Logger = ConsoleLogger) =
       this.copy(server = Server(name, port))
 
-    def join[T](after: DanBot => T) =
+    /** Call this method after configuring danbot to join the specified channels */
+    def join[T](after: DanBot => T = { d: DanBot => println("beep boop. powering down."); }) =
       channels match {
         case cs if(!cs.isEmpty) =>
-          lazy val connection =
-            server.connect(
-              name, cs
-            )
+          lazy val connection = server.connect(name, cs)
           Thread.currentThread.getName() match {
             case "main" => 
               connection
@@ -44,5 +60,6 @@ object Bot {
       }
   }
 
+  /** Start by giving Dan a name */
   def apply(name: String) = DanBot(name)
 }
